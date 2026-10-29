@@ -1,30 +1,63 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:untitled11/pages/finance/finance.dart';
+import 'package:untitled11/pages/finance/modelfinance.dart';
 
-import 'package:untitled11/main.dart';
+TransactionModel _transaction({
+  required String type,
+  required double amount,
+  String currency = 'USD',
+  String category = 'General',
+  String fund = 'Général',
+}) {
+  return TransactionModel(
+    type: type,
+    categorie: category,
+    montant: amount,
+    date: DateTime(2026, 1, 15),
+    description: 'Test transaction',
+    evenement: '',
+    fondAssocie: fund,
+    donateur: 'Test',
+    devise: currency,
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('ChurchFinanceEngine', () {
+    test('converts CDF transactions to USD before calculating the balance', () {
+      final engine = ChurchFinanceEngine(
+        transactions: [
+          _transaction(type: 'entree', amount: 200),
+          _transaction(type: 'sortie', amount: 142500, currency: 'CDF'),
+        ],
+        budgetMensuel: 250,
+        tauxChange: 2850,
+      );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(engine.totalEntreesUSD, 200);
+      expect(engine.totalSortiesUSD, 50);
+      expect(engine.soldeGlobalUSD, 150);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('calculates the budget consumption ratio from expenses', () {
+      final engine = ChurchFinanceEngine(
+        transactions: [
+          _transaction(type: 'sortie', amount: 100),
+          _transaction(type: 'sortie', amount: 50),
+        ],
+        budgetMensuel: 250,
+      );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      expect(engine.tauxConsommationBudget, 0.6);
+    });
+
+    test('returns no expense category when there are no outgoing transactions', () {
+      final engine = ChurchFinanceEngine(
+        transactions: [_transaction(type: 'entree', amount: 100)],
+        budgetMensuel: 250,
+      );
+
+      expect(engine.categorieLaPlusDepensiere, 'Aucune');
+    });
   });
 }
