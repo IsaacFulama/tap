@@ -35,11 +35,9 @@ void main() async {
     Hive.registerAdapter(AssetModelAdapter()); // ID 3 : Matériels & Biens
   }
 
-  // 🛠️ PHASE DE SÉCURITÉ : Nettoyage des anciennes boîtes corrompues
-  // (Supprime ces 3 lignes après le premier démarrage réussi pour conserver tes futures données)
-  await Hive.deleteBoxFromDisk("membres_eglise");
-  await Hive.deleteBoxFromDisk("finances");
-  await Hive.deleteBoxFromDisk("biens_eglise");
+  // Ne jamais supprimer automatiquement les boîtes Hive au démarrage :
+  // elles contiennent les données locales des membres, finances et biens.
+  // Une réparation de données doit être explicite et précédée d'une sauvegarde.
 
   // 5. Ouvre à nouveau les boîtes de stockage sur des bases saines et propres
   await Hive.openBox<MembreModel>("membres_eglise");
