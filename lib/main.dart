@@ -13,49 +13,33 @@ import 'package:untitled11/pages/materielles/model_bien.dart';
 import 'package:untitled11/GlobalSyncService/global_sync_service.dart';
 
 void main() async {
-  // 1. Assure la liaison avec le moteur Flutter
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Initialise Firebase (Essentiel pour l'authentification et Firestore)
+  // Initialise Firebase, Hive et les adaptateurs avant de démarrer l'application.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // 3. Initialise Hive pour la mise en cache locale
   await Hive.initFlutter();
 
-  // 4. Enregistre les adaptateurs Hive en vérifiant l'absence de doublons
   if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(TransactionModelAdapter()); // ID 1 : Finances
+    Hive.registerAdapter(TransactionModelAdapter());
   }
-
   if (!Hive.isAdapterRegistered(2)) {
-    Hive.registerAdapter(MembreModelAdapter()); // ID 2 : Membres
+    Hive.registerAdapter(MembreModelAdapter());
   }
-
   if (!Hive.isAdapterRegistered(3)) {
-    Hive.registerAdapter(AssetModelAdapter()); // ID 3 : Matériels & Biens
+    Hive.registerAdapter(AssetModelAdapter());
   }
 
-  // 🛠️ PHASE DE SÉCURITÉ : Nettoyage des anciennes boîtes corrompues
-  // (Supprime ces 3 lignes après le premier démarrage réussi pour conserver tes futures données)
-  await Hive.deleteBoxFromDisk("membres_eglise");
-  await Hive.deleteBoxFromDisk("finances");
-  await Hive.deleteBoxFromDisk("biens_eglise");
-
-  // 5. Ouvre à nouveau les boîtes de stockage sur des bases saines et propres
+  // IMPORTANT : ne jamais supprimer les boîtes Hive au démarrage.
+  // Les données locales contiennent les finances, les membres et le patrimoine.
+  // Une migration ou une réparation doit être explicite et préserver une sauvegarde.
   await Hive.openBox<MembreModel>("membres_eglise");
   await Hive.openBox<TransactionModel>("finances");
   await Hive.openBox<AssetModel>("biens_eglise");
 
-  // 6. Initialisation de la synchronisation Cloud Firestore
   final syncService = GlobalSyncService();
-
-  // Étape A : Télécharge les données depuis Firestore vers Hive si l'appareil est neuf
   await syncService.recupererDonneesDistantes();
-
-  // Étape B : Active l'écouteur réactif (Hive -> Firebase)
   syncService.initialiserLaSynchronisation();
 
-  // 7. Démarre l'interface graphique
   runApp(const MyApp());
 }
 
@@ -67,7 +51,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       title: 'Amour Parfait Tab',
       debugShowCheckedModeBanner: false,
-      home: Inscription(), // Redirige directement sur ton écran d'inscription sécurisé
+      home: Inscription(),
     );
   }
 }
